@@ -147,6 +147,10 @@ class PDF extends FPDF
 ?>
 ```
 
+#### Многостраничные pdf-документы
+- С помощью встраиваемых в html-страницу php-скриптов можно узнать номер страницы и общее количество страниц в результирующем pdf-файле: https://github.com/dompdf/dompdf/wiki/Usage#embedded-php-support
+- Примеры использования встроенного скрипта на PHP для добавления header и footer. См. ответы на вопросы "Is there a way to add headers and footers or page numbers?" и "How can I add an image to a header or footer on every page?": https://web.archive.org/web/20160102041301/https://code.google.com/p/dompdf/wiki/FAQ
+
 #### Выводы: 
  Несмотря на то, что Dompdf отличная библиотека, она не является полностью универсальным решением для генерации PDF документов; 
  она все же имеет определенные ограничения и проблемы. Dompdf не очень терпимо относится к плохо оформленному HTML 
