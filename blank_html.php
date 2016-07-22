@@ -49,7 +49,7 @@
 				<tr>
 					<td>
 						<?php
-							header('Content-Type: text/html; charset=utf8');
+                            header('Content-Type: text/html; charset=utf8');
 							include("phpqrcode/qrlib.php");
 							$dbname = "mpolyakru_mkd";   
 							$dblocation = "localhost";   
@@ -70,10 +70,17 @@
 							// Иначе - берется фио из owners и находим все помещения, которыми он владеет(дом опред по собранию), расчитывается площадь и т.п.
 							$Meeting = 2;
 							$ThisPage = 1;
-							$Id = 2; //создать одинбольшой join со всеми таблицами
+							$Id = 2; //создать один большой join со всеми таблицами 
+							$joinQuery = $dbcnx->query("select *, ROUND((area_rosreestr*((share_numerator + 0.0)/share_denominator)), 2) as Data_Flat
+								from Meeting join Building on Meeting.id_building = Building.id_building
+								join Premise on Premise.id_building = Building.id_building
+								join Property_rights on Premise.id_premise = Property_rights.id_premise
+								join Owner on Property_rights.id_owner = Owner.id_owner  
+								left join Users on Owner.id_owner = Users.id_owner
+								where id = ".$Id." and id_meeting = ".$Meeting);//соединения с основными таблицами
 							$resultVariable1 = $dbcnx->query("select id from Building, Meeting, Users, Premise 
 									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
-									and Users.id = ".$Id." and Premise.id_building = Building.id_building");
+									and Users.id = ".$Id." and Premise.id_building = Building.id_building");// запросы на определение пустоты записей
 							$resultVariable2 = $dbcnx->query("select id_meeting from Building, Meeting, Users, Premise 
 									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
 									and Users.id = ".$Id." and Premise.id_building = Building.id_building");
@@ -85,13 +92,11 @@
 							$result2 = $dbcnx->query("select Owner.name, Owner.patronymic, Owner.surname, Owner.SNILS from Owner, Users, Premise, Building, Meeting
 									where Users.id = ".$Id." and Owner.id_owner = Users.id_owner and Premise.id_premise = Users.id_premise and Building.id_building = Premise.id_building
 									and Meeting.id_building = Building.id_building and Meeting.id_meeting = ".$Meeting);// приведение к float
-							$result31 = $dbcnx->query("select distinct Building.id_building, Premise.number, Premise.area_rosreestr, ROUND((area_rosreestr*((share_numerator + 0.0)/share_denominator)), 2) as Data_Flat, Property_rights.regnumber, Property_rights.regdate 
+							$result31 = $dbcnx->query("select *, ROUND((area_rosreestr*((share_numerator + 0.0)/share_denominator)), 2) as Data_Flat
 									from Building, Meeting, Users, Premise, Property_rights, Owner 
 									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
 									and Premise.id_building = Building.id_building and Users.id = ".$Id." and Users.id_premise = Premise.id_premise
-									and Premise.id_premise = Property_rights.id_premise and Users.id_owner = Owner.id_owner and Property_rights.id_owner = Owner.id_owner");/*from Meeting inner join Building on Meeting.id_building = Building.id_building inner join Premise on Building.id_building = Premise.id_building
-									inner join User on Premise.id_premise = User.id_premise inner join Owner on Owner.id_owner = User.id_owner as LinkData, Property_rights
-									*/
+									and Premise.id_premise = Property_rights.id_premise and Users.id_owner = Owner.id_owner and Property_rights.id_owner = Owner.id_owner");
 							$rowVar1 = $resultVariable1->num_rows;
 							$rowVar2 = $resultVariable2->num_rows;
 							$rowVar3 = $resultVariable3->num_rows;
@@ -116,7 +121,7 @@
 									echo "___________________";
 								echo "</p>";
 							}
-							while($row31 = mysqli_fetch_array($result31))
+							while($row31 = mysqli_fetch_array($joinQuery))
 							{									
 								if(($rowVar1 == 0 and $rowVar2 != 0) or $rowVar3 == 0)
 								{
@@ -125,7 +130,7 @@
 									echo "<br>Площадь помещения(кв.м): ".$row31['area_rosreestr'];
 									echo "<br>Количество голосов: ".$row31['Data_Flat'];
 									echo "<br>Номер свидетельства о праве собственности: ".$row31['regnumber'];
-									echo "<br>Дата регистрации права собственности: ".$row31['regdate']."</p>";		
+									echo "<br>Дата регистрации права собственности: ".$row31['regdate']."</p>";	
 								}
 								else {
 									$QRDATA .= "|0|";
@@ -141,8 +146,8 @@
 							}
 							mysqli_free_result($result1);
 							mysqli_free_result($result2);
-							mysqli_free_result($result31);		
-							QRcode::png($QRDATA, 'test.png', 'L', 4,4);// Записать версию алгоритма(первые 5 символов(v1.0)), id-owner, id-meeting, id-building, колличество страниц пример: v1.0 | 1234567 | 1234789 | 875938759				
+							mysqli_free_result($joinQuery);		
+							QRcode::png($QRDATA, 'ImageQR/test.png', 'L', 4,4);// Записать версию алгоритма(первые 5 символов(v1.0)), id-owner, id-meeting, id-building, колличество страниц пример: v1.0 | 1234567 | 1234789 | 875938759				
 				
 						?>
 					<p>Телефон______________________ </p>
@@ -180,7 +185,7 @@
 									<td align='center'><img src = 'form.png' width='50px' height='40px'><td width='50px'></td>
 									<td align='center'><img src = 'form.png' width='50px' height='40px'><td width='50px'></td>
 									<td align='center'><img src = 'form.png' width='50px' height='40px'><td width='50px'></td>
-									<td> <img src = 'test".$NumberQuestion.".png'> </td>									
+									<td> <img src = 'ImageQR/test".$NumberQuestion.".png'> </td>									
 								</tr>";
 
 							$NumberQuestion++;
