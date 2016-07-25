@@ -4,11 +4,40 @@
 		<title>Бланк</title>
 		<style>
 		*{
-			font-family: Thimes New Roman; /* Рубленый шрифт заголовка */
+			/* font-family: Thimes New Roman; Рубленый шрифт заголовка */
 		    margin:0; /* Отступ от края элемента */
 			padding:0; /* Поля вокруг текста */
 		 }
 		 
+		 <?php
+						  //Таблица Markup_style - описание стилей, использующихся в размете html- запросов. Содержимое вставить в шапку. Соединена с Meeting по 
+			header('Content-Type: text/html; charset=utf8');
+			include("phpqrcode/qrlib.php");
+			$dbname = "mpolyakru_mkd";   
+			$dblocation = "localhost";   
+			$dbuser = "mpolyakru_mkd";   
+			$dbpasswd = "test1234";   
+			$dbcnx = new mysqli($dblocation, $dbuser, $dbpasswd, $dbname);
+			$dbcnx->query("SET NAMES utf8");
+			$dbcnx->query("SET CHARACTER SET utf8");
+			$dbcnx->query("SET SESSION collation_connection = utf8");
+			if($dbcnx->connect_errno){
+				echo "Не могу соедениться";
+			}	
+			$Meeting = 2;
+			$CssQuery = $dbcnx->query("select css_style from Markup_style, Meeting where Meeting.id_meeting = ".$Meeting.
+				" and Meeting.id_markup_style = Markup_style.id_markup_style");	
+            while($row = mysqli_fetch_array($CssQuery)){
+				echo $row['css_style'];
+			}
+		 ?>
+		 
+        @font-face {
+          font-family: 'Open Sans';
+          font-style: normal;
+          font-weight: 400;
+          src: url(http://themes.googleusercontent.com/static/fonts/opensans/v8/cJZKeOuBrn4kERxqtaUH3aCWcynf_cDxXwCLxiixG1c.ttf) format('truetype');
+        }		 
 		#header
 		{	
 			/* Отступы */
@@ -16,6 +45,7 @@
 			margin-right: 50px;
 			margin-bottom: 0;
 			margin-left: 50px;
+            font-family: firefly, DejaVu Sans, sans-serif;
 		}	
 		
 		#container
@@ -49,25 +79,9 @@
 				<tr>
 					<td>
 						<?php
-                            header('Content-Type: text/html; charset=utf8');
-							include("phpqrcode/qrlib.php");
-							$dbname = "mpolyakru_mkd";   
-							$dblocation = "localhost";   
-							$dbuser = "mpolyakru_mkd";   
-							$dbpasswd = "test1234";   
-			
-							$dbcnx = new mysqli($dblocation, $dbuser, $dbpasswd, $dbname);
-							$dbcnx->query("SET NAMES utf8");
-							$dbcnx->query("SET CHARACTER SET utf8");
-							$dbcnx->query("SET SESSION collation_connection = utf8");
-							
-							if($dbcnx->connect_errno){
-								echo "Не могу соедениться";
-							}	
-							//варианты генерации бланков:
+			             	//варианты генерации бланков:
 							// 1 - собственники не привязаны к сайту (id-user = 0 или пустой) - генерируется пустой бланк(адресс дома уже заполнен)
-							// 2 - id-user не равен 0 или не пустой, смотрим записи: premise и owner. Если id-owner не задан, пункт первый
-							// Иначе - берется фио из owners и находим все помещения, которыми он владеет(дом опред по собранию), расчитывается площадь и т.п.
+							// 2 - id_owner не равен 0 или не пустой -  берется фио из owners и находим все помещения, которыми он владеет(дом опред по собранию), расчитывается площадь и т.п.
 							$Meeting = 2;
 							$ThisPage = 1;
 							$Id = 2; //создать один большой join со всеми таблицами 
@@ -76,16 +90,12 @@
 								join Premise on Premise.id_building = Building.id_building
 								join Property_rights on Premise.id_premise = Property_rights.id_premise
 								join Owner on Property_rights.id_owner = Owner.id_owner  
-								left join Users on Owner.id_owner = Users.id_owner
+								join Users on Owner.id_owner = Users.id_owner
 								where id = ".$Id." and id_meeting = ".$Meeting);//соединения с основными таблицами
-							$resultVariable1 = $dbcnx->query("select id from Building, Meeting, Users, Premise 
-									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
-									and Users.id = ".$Id." and Premise.id_building = Building.id_building");// запросы на определение пустоты записей
-							$resultVariable2 = $dbcnx->query("select id_meeting from Building, Meeting, Users, Premise 
-									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
-									and Users.id = ".$Id." and Premise.id_building = Building.id_building");
-							$resultVariable3 = $dbcnx->query("select id_owner from Users, Owner 
-									where Users.id = ".$Id." and Users.id_owner = Owner.id_owner");
+							if($resultVariable3 = $dbcnx->query("select id_owner from Users, Owner 
+									where Users.id = ".$Id." and Users.id_owner = Owner.id_owner")){
+									$rowVar3 = $resultVariable3->num_rows;
+									}
 							$result1 = $dbcnx->query("select Building.Address from Building, Meeting, Users, Premise 
 									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
 									and Users.id = ".$Id." and Users.id_premise = Premise.id_premise and Premise.id_building = Building.id_building"); 		
@@ -97,59 +107,38 @@
 									where Meeting.id_meeting = ".$Meeting." and Meeting.id_building = Building.id_building
 									and Premise.id_building = Building.id_building and Users.id = ".$Id." and Users.id_premise = Premise.id_premise
 									and Premise.id_premise = Property_rights.id_premise and Users.id_owner = Owner.id_owner and Property_rights.id_owner = Owner.id_owner");
-							$rowVar1 = $resultVariable1->num_rows;
-							$rowVar2 = $resultVariable2->num_rows;
-							$rowVar3 = $resultVariable3->num_rows;
 							$QRDATA = "V";
-							while($row1 = mysqli_fetch_array($result1))
-							{
-								if(($rowVar1 == 0 and $rowVar2 != 0) or $rowVar3 == 0){
-									$QRDATA .= "1.0";																				
-									echo "<p>Адрес здания: ".$row1['Address']."</p>";	
-								}
-								else {
-									$QRDATA .= "1.1";
-									echo "<p>Адрес здания: ____________</p>";	
-								}
-							}
-							while($row2 = mysqli_fetch_array($result2))
-							{
-								echo "<p>Ф.И.О. собственника: ";
-								if(($rowVar1 == 0 and $rowVar2 != 0) or $rowVar3 == 0)
-									echo $row2['surname']." ".$row2['name']." ".$row2['patronymic'];
-								else 
-									echo "___________________";
-								echo "</p>";
-							}
 							while($row31 = mysqli_fetch_array($joinQuery))
 							{									
-								if(($rowVar1 == 0 and $rowVar2 != 0) or $rowVar3 == 0)
+								if($row31['id_owner'] != "" )
 								{
-									$QRDATA .= "|".$row31.['id_owner']."|";
-									echo "<p>Номер помещения(квартиры): ".$row31['number'];
+									$QRDATA .= "1.0|".$row31.['id_owner']."|";
+									echo "<p>Адресc здания: ".$row31['address'];
+									echo "<br>Ф.И.О. собственника: ".$row31['surname']." ".$row31['name']." ".$row31['patronymic']." ";
+									echo "<br>Номер помещения(квартиры): ".$row31['number'];
 									echo "<br>Площадь помещения(кв.м): ".$row31['area_rosreestr'];
 									echo "<br>Количество голосов: ".$row31['Data_Flat'];
 									echo "<br>Номер свидетельства о праве собственности: ".$row31['regnumber'];
 									echo "<br>Дата регистрации права собственности: ".$row31['regdate']."</p>";	
 								}
 								else {
-									$QRDATA .= "|0|";
-									echo "<p>Номер помещения(квартиры):___________________";
+									$QRDATA .= "1.1|0|";
+									echo "<p>Адресc здания: ___________________";
+									echo "<br>Ф.И.О. собственника: ___________________ ";
+									echo "<br>Номер помещения(квартиры):___________________";
 									echo "<br>Площадь помещения(кв.м): ___________________";
 									echo "<br>Количество голосов: ___________________";
-									echo "<br>Номер свидетельства о праве собственности: ___________________</p>";
+									echo "<br>Номер свидетельства о праве собственности: ___________________";
 									echo "<br>Дата регистрации права собственности: ___________________</p>";
 								}
-								$QRDATA .= $Meeting."|".$row31['id_building'];
-								$QRDATA .= "|".$ThisPage."|";
-								
+								$QRDATA .= $Meeting."|".$row31['id_building']."|".$ThisPage."|";
 							}
 							mysqli_free_result($result1);
 							mysqli_free_result($result2);
 							mysqli_free_result($joinQuery);		
 							QRcode::png($QRDATA, 'ImageQR/test.png', 'L', 4,4);// Записать версию алгоритма(первые 5 символов(v1.0)), id-owner, id-meeting, id-building, колличество страниц пример: v1.0 | 1234567 | 1234789 | 875938759				
 				
-						?>
+					?>
 					<p>Телефон______________________ </p>
 
 					</td>
