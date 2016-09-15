@@ -200,10 +200,9 @@ HTML;
 		// РАБОЧАЯ ОБЛАСТЬ 
 		$html .='<div id="container">'; 
 		
-			if($ThisPage == 1)
-			{
-				$html .='<h1 align="center">Вопросы, поставленные на голосование:</h1><br>';
-			}
+
+			$html .='<h1 align="center">Вопросы, поставленные на голосование:</h1><br>';
+
 			$IndexResult = 1;// индекс текушего вопроса
 			
 			$html .= '<table id ="t2" width="725px">';
